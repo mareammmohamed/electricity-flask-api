@@ -1,0 +1,82 @@
+body,
+html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+.d-flex {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f8f9fa;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 280px;
+  background-color: #004f74;
+  color: #fff;
+  flex-shrink: 0;
+  padding: 20px;
+  position: sticky;
+  top: 0;
+}
+
+.sidebar .nav-link {
+  color: #fff;
+  transition: 0.3s;
+  margin-bottom: 5px;
+}
+
+.sidebar .nav-link:hover,
+.sidebar .nav-link.active {
+  background-color: #4376a8 !important;
+  color: #fff !important;
+}
+
+/* Content */
+.content-area {
+  flex-grow: 1;
+  padding: 30px;
+  display: flex;
+  justify-content: center;
+}
+
+/* Card */
+.card {
+  width: 100%;
+  max-width: 700px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+/* Device rows */
+#devicesContainer .row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap; /* يخلي الأعمدة تنزل تحت لو مساحة الشاشة ضيقة */
+}
+
+#devicesContainer .row .col {
+  flex: 1 1 45%; /* كل حقل ياخد تقريبًا نصف عرض الكارد */
+}
+
+/* Buttons */
+.form-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  justify-content: flex-end;
+}
+
+/* Inputs */
+input.form-control {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.btn-primary {
+  background-color: #004f74;
+}

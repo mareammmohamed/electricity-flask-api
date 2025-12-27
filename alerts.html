@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"
+    />
+    <link rel="stylesheet" href="alerts.css" />
+    <style>
+      .alert-card {
+        border-left: 5px solid #dc3545;
+        margin-bottom: 15px;
+        transition: all 0.3s;
+      }
+      .alert-card.warning {
+        border-left-color: #ffc107;
+      }
+      .alert-card.info {
+        border-left-color: #17a2b8;
+      }
+      .alert-card.low {
+        border-left-color: #28a745;
+      }
+      .alert-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+      }
+      .no-alerts {
+        text-align: center;
+        padding: 40px;
+        color: #6c757d;
+      }
+      .alert-icon {
+        font-size: 24px;
+        margin-right: 10px;
+      }
+      .debug-info {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        padding: 10px;
+        margin-top: 10px;
+        font-size: 12px;
+        display: none;
+      }
+      .alert-card {
+        max-height: 220px; /* الطول اللي انتي عايزاه */
+        overflow-y: hidden; /* Scroll جوه الكارد */
+      }
+    </style>
+  </head>
+  <body>
+    <div class="d-flex">
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <ul class="nav nav-pills flex-column mb-auto">
+          <li class="nav-item">
+            <a href="index.html" class="nav-link"
+              ><i class="fa-regular fa-house"></i> Dashboard</a
+            >
+          </li>
+          <li class="nav-item">
+            <a href="user.html" class="nav-link"
+              ><i class="fa-solid fa-bolt"></i> User Input</a
+            >
+          </li>
+          <!-- <li>
+            <a href="predection.html" class="nav-link"
+              ><i class="fa-solid fa-arrow-trend-up"></i> Predictions</a
+            >
+          </li> -->
+          <li>
+            <a href="alerts.html" class="nav-link active"
+              ><i class="fa-regular fa-bell"></i> Alerts</a
+            >
+          </li>
+          <!-- <li>
+            <a href="recommend.html" class="nav-link"
+              ><i class="fa-regular fa-lightbulb"></i> Recommendations</a
+            >
+          </li> -->
+        </ul>
+      </div>
+
+      <!-- Content -->
+      <div class="content-area">
+        <h2>Energy Consumption Alerts</h2>
+        <p class="ct">
+          Stay informed about unusual energy patterns and high-consumption
+          devices to manage your household's energy footprint efficiently.
+        </p>
+
+        <div class="alert-header mb-4">
+          <span class="ms-3 text-muted" id="lastUpdated"></span>
+        </div>
+
+        <div id="debugInfo" class="debug-info">
+          <h6>Debug Information:</h6>
+          <div id="debugContent"></div>
+        </div>
+
+        <div id="alertsContainer">
+          <!-- سيتم تحميل التنبيهات هنا ديناميكياً -->
+          <div class="no-alerts" id="noAlertsMessage">
+            <i class="fas fa-bell-slash fa-3x mb-3"></i>
+            <h4>No Alerts Found</h4>
+            <p>Submit your energy data first to get personalized alerts.</p>
+            <a href="user.html" class="btn btn-primary mt-2"
+              >Go to User Input</a
+            >
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      // دالة لعرض معلومات التصحيح
+      function showDebugInfo() {
+        const debugContent = document.getElementById("debugContent");
+        const energyDataString = localStorage.getItem("energyData");
+        const lastResultString = localStorage.getItem("lastResult");
+
+        let debugHTML = `
+          <p><strong>Keys in localStorage:</strong> ${JSON.stringify(
+            Object.keys(localStorage)
+          )}</p>
+          <p><strong>energyData exists:</strong> ${
+            energyDataString ? "YES" : "NO"
+          }</p>
+          <p><strong>lastResult exists:</strong> ${
+            lastResultString ? "YES" : "NO"
+          }</p>
+        `;
+
+        if (energyDataString) {
+          try {
+            const energyData = JSON.parse(energyDataString);
+            debugHTML += `
+              <p><strong>energyData content:</strong> ${JSON.stringify(
+                energyData
+              )}</p>
+              <p><strong>Devices count:</strong> ${
+                energyData.devices ? energyData.devices.length : 0
+              }</p>
+            `;
+          } catch (e) {
+            debugHTML += `<p><strong>Error parsing energyData:</strong> ${e.message}</p>`;
+          }
+        }
+
+        if (lastResultString) {
+          try {
+            const lastResult = JSON.parse(lastResultString);
+            debugHTML += `
+              <p><strong>lastResult content:</strong> ${JSON.stringify(
+                lastResult
+              )}</p>
+            `;
+          } catch (e) {
+            debugHTML += `<p><strong>Error parsing lastResult:</strong> ${e.message}</p>`;
+          }
+        }
+
+        debugContent.innerHTML = debugHTML;
+      }
+
+      function toggleDebug() {
+        const debugInfo = document.getElementById("debugInfo");
+        if (
+          debugInfo.style.display === "none" ||
+          debugInfo.style.display === ""
+        ) {
+          debugInfo.style.display = "block";
+          showDebugInfo();
+        } else {
+          debugInfo.style.display = "none";
+        }
+      }
+
+      // دالة لتحديث التنبيهات
+      function refreshAlerts() {
+        const energyDataString = localStorage.getItem("energyData");
+        const lastResultString = localStorage.getItem("lastResult");
+        const energyData = energyDataString
+          ? JSON.parse(energyDataString)
+          : null;
+        const lastResult = lastResultString
+          ? JSON.parse(lastResultString)
+          : null;
+        const alertsContainer = document.getElementById("alertsContainer");
+        const noAlertsMessage = document.getElementById("noAlertsMessage");
+        const lastUpdated = document.getElementById("lastUpdated");
+
+        // تحديث وقت آخر تحديث
+        const now = new Date();
+        lastUpdated.textContent = `Last updated: ${now.toLocaleTimeString()}`;
+
+        // تحديث معلومات التصحيح إذا كانت ظاهرة
+        if (document.getElementById("debugInfo").style.display === "block") {
+          showDebugInfo();
+        }
+
+        // التحقق من وجود بيانات فعلية
+        let hasData = false;
+
+        // التحقق من energyData
+        if (energyData) {
+          if (energyData.devices && energyData.devices.length > 0) {
+            hasData = true;
+          }
+          if (
+            energyData.monthly_consumption_input &&
+            energyData.monthly_consumption_input > 0
+          ) {
+            hasData = true;
+          }
+        }
+
+        // التحقق من lastResult
+        if (lastResult) {
+          if (
+            lastResult.device_consumption &&
+            Object.keys(lastResult.device_consumption).length > 0
+          ) {
+            hasData = true;
+          }
+          if (
+            lastResult.user_input_monthly_kwh &&
+            lastResult.user_input_monthly_kwh > 0
+          ) {
+            hasData = true;
+          }
+        }
+
+        if (!hasData) {
+          noAlertsMessage.style.display = "block";
+          alertsContainer.innerHTML = "";
+          alertsContainer.appendChild(noAlertsMessage);
+          return;
+        }
+
+        noAlertsMessage.style.display = "none";
+
+        // توليد التنبيهات بناءً على البيانات
+        const alerts = generateAlerts(energyData, lastResult);
+
+        if (alerts.length === 0) {
+          alertsContainer.innerHTML = `
+      <div class="no-alerts">
+        <i class="fas fa-check-circle fa-3x mb-3 text-success"></i>
+        <h4>All Good!</h4>
+        <p>No critical alerts detected. Your energy consumption seems normal.</p>
+      </div>
+    `;
+          return;
+        }
+
+        // عرض التنبيهات
+        let alertsHTML = "";
+        alerts.forEach((alert, index) => {
+          const alertClass = getAlertClass(alert.severity);
+          alertsHTML += `
+      <div class="card text-black alert-card ${alertClass}">
+        <div class="card-body">
+          <div class="d-flex align-items-start">
+            <div class="alert-icon text-${getAlertColor(alert.severity)}">
+              <i class="${getAlertIcon(alert.severity)}"></i>
+            </div>
+            <div style="flex: 1;">
+              <h5 class="card-title">${alert.title}</h5>
+              <p class="card-text">${alert.message}</p>
+              ${
+                alert.device
+                  ? `<p class="card-text"><strong>Device:</strong> ${alert.device}</p>`
+                  : ""
+              }
+              ${
+                alert.consumption
+                  ? `<p class="card-text"><strong>Consumption:</strong> ${alert.consumption} kWh</p>`
+                  : ""
+              }
+              ${
+                alert.recommendation
+                  ? `<p class="card-text"><strong>Recommendation:</strong> ${alert.recommendation}</div>`
+                  : ""
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+        });
+
+        alertsContainer.innerHTML = alertsHTML;
+      }
+
+      // دالة لتوليد التنبيهات بناءً على البيانات
+      function generateAlerts(energyData, analysisResult) {
+        const alerts = [];
+
+        if (!energyData && !analysisResult) {
+          return alerts;
+        }
+
+        const monthlyInput =
+          energyData?.monthly_consumption_input ||
+          analysisResult?.user_input_monthly_kwh ||
+          0;
+        const devices = energyData?.devices || [];
+        const deviceConsumption = analysisResult?.device_consumption || {};
+
+        console.log("Generating alerts with data:", {
+          monthlyInput,
+          devices,
+          deviceConsumption,
+        });
+
+        // 1. تحقق من الاستهلاك العالي جداً
+        if (monthlyInput > 500) {
+          alerts.push({
+            title: "Very High Energy Consumption",
+            message: `Your monthly consumption (${monthlyInput} kWh) is significantly above average household levels.`,
+            severity: "high",
+            recommendation:
+              "Consider conducting an energy audit to identify areas for improvement.",
+          });
+        } else if (monthlyInput > 0) {
+          alerts.push({
+            title: "Normal Energy Consumption",
+            message: `Your monthly consumption (${monthlyInput} kWh) is within normal range.`,
+            severity: "low",
+            recommendation:
+              "Continue monitoring your usage to maintain efficiency.",
+          });
+        }
+
+        // 2. تحقق من الأجهزة عالية الاستهلاك
+        devices.forEach((device) => {
+          const deviceName = device.device_name || device.device_type;
+          const hours = device.hours_per_day || 0;
+          const consumption = deviceConsumption[device.device_type];
+
+          console.log(
+            `Checking device: ${deviceName}, hours: ${hours}, type: ${device.device_type}`
+          );
+
+          // سخان مياه
+          if (device.device_type === "heater" && hours > 3) {
+            alerts.push({
+              title: "High Water Heater Usage",
+              message: `Water heater is running for ${hours} hours daily, which is above recommended levels.`,
+              device: deviceName,
+              consumption: consumption ? `${consumption} kWh/month` : "N/A",
+              severity: "high",
+              recommendation:
+                "Reduce usage to 1-2 hours daily and consider using a timer.",
+            });
+          }
+
+          // مكيف هواء
+          if (device.device_type === "ac" && hours > 12) {
+            alerts.push({
+              title: "Extended AC Operation",
+              message: `Air conditioner is running for ${hours} hours daily. Consider optimizing usage.`,
+              device: deviceName,
+              consumption: consumption ? `${consumption} kWh/month` : "N/A",
+              severity: "medium",
+              recommendation:
+                "Set AC to 24°C when home and turn off when away.",
+            });
+          }
+
+          // ثلاجة
+          if (device.device_type === "fridge") {
+            if (hours < 24) {
+              alerts.push({
+                title: "Fridge Not Running Continuously",
+                message:
+                  "Fridge should run 24/7 for food safety. Current setting may indicate issues.",
+                device: deviceName,
+                severity: "high",
+                recommendation:
+                  "Ensure fridge is properly plugged in and functioning.",
+              });
+            } else if (consumption > monthlyInput * 0.25) {
+              alerts.push({
+                title: "High fridge Energy Usage",
+                message:
+                  "Fridge is consuming more than 25% of your total energy.",
+                device: deviceName,
+                consumption: consumption ? `${consumption} kWh/month` : "N/A",
+                severity: "medium",
+                recommendation:
+                  "Check door seals and clean condenser coils for better efficiency.",
+              });
+            } else {
+              alerts.push({
+                title: "Fridge Operating Normally",
+                message: `Fridge is running ${hours} hours daily, which is normal.`,
+                device: deviceName,
+                severity: "low",
+                recommendation:
+                  "Maintain current usage patterns for optimal food preservation.",
+              });
+            }
+          }
+
+          // غسالة
+          if (device.device_type === "washer" && hours > 2) {
+            alerts.push({
+              title: "High Washing Machine Usage",
+              message: `Washing machine usage (${hours} hours daily) seems high for typical household.`,
+              device: deviceName,
+              consumption: consumption ? `${consumption} kWh/month` : "N/A",
+              severity: "medium",
+              recommendation:
+                "Run full loads and use cold water when possible.",
+            });
+          }
+          // مكواة
+          if (device.device_type === "iron" && hours > 1) {
+            alerts.push({
+              title: "High Iron Usage",
+              message: `Iron is being used for ${hours} hours daily, which is higher than usual.`,
+              device: deviceName,
+              consumption: consumption ? `${consumption} kWh/month` : "N/A",
+              severity: "medium",
+              recommendation:
+                "Iron clothes in batches and unplug the iron immediately after use.",
+            });
+          }
+
+          // تليفزيون
+          if (device.device_type === "tv" && hours > 6) {
+            alerts.push({
+              title: "Excessive TV Usage",
+              message: `Television is running for ${hours} hours daily.`,
+              device: deviceName,
+              consumption: consumption ? `${consumption} kWh/month` : "N/A",
+              severity: "low",
+              recommendation:
+                "Turn off the TV when not actively watching and reduce background usage.",
+            });
+          }
+
+          // فرن
+          if (device.device_type === "oven" && hours > 1.5) {
+            alerts.push({
+              title: "Frequent Oven Usage",
+              message: `Oven is used for ${hours} hours daily. Consider alternative cooking methods.`,
+              device: deviceName,
+              consumption: consumption ? `${consumption} kWh/month` : "N/A",
+              severity: "low",
+              recommendation:
+                "Use microwave or toaster oven for small meals to save energy.",
+            });
+          }
+        });
+
+        // 3. تحقق من إجمالي ساعات التشغيل
+        const totalHours = devices.reduce(
+          (sum, device) => sum + (device.hours_per_day || 0),
+          0
+        );
+        if (totalHours > 50) {
+          alerts.push({
+            title: "High Total Device Runtime",
+            message: `Your devices are running for ${totalHours.toFixed(
+              1
+            )} hours daily combined.`,
+            severity: "medium",
+            recommendation:
+              "Consider staggering device usage and turning off unused devices.",
+          });
+        }
+
+        // 4. تحقق من التنبؤ المستقبلي
+        if (analysisResult && analysisResult.predicted_next_month) {
+          const predicted = analysisResult.predicted_next_month;
+          const changePercent = analysisResult.نسبة_التغير || 0;
+
+          if (changePercent > 15) {
+            alerts.push({
+              title: "Significant Consumption Increase Predicted",
+              message: `Next month's consumption is predicted to increase by ${changePercent.toFixed(
+                1
+              )}% to ${predicted} kWh.`,
+              severity: "high",
+              recommendation:
+                "Review your device usage patterns to identify areas for reduction.",
+            });
+          } else if (changePercent < -10) {
+            alerts.push({
+              title: "Consumption Decrease Predicted",
+              message: `Good news! Next month's consumption is predicted to decrease by ${Math.abs(
+                changePercent
+              ).toFixed(1)}%.`,
+              severity: "low",
+              recommendation:
+                "Continue with your current energy-saving practices.",
+            });
+          }
+        }
+
+        // 5. تحقق من عدد الأجهزة
+
+        console.log("Generated alerts:", alerts);
+        return alerts;
+      }
+
+      // دوال مساعدة
+      function getAlertClass(severity) {
+        const classes = {
+          high: "high",
+          medium: "warning",
+          low: "low",
+          info: "info",
+        };
+        return classes[severity] || "info";
+      }
+
+      function getAlertColor(severity) {
+        const colors = {
+          high: "danger",
+          medium: "warning",
+          low: "success",
+          info: "info",
+        };
+        return colors[severity] || "info";
+      }
+
+      function getAlertIcon(severity) {
+        const icons = {
+          high: "fas fa-exclamation-triangle",
+          medium: "fas fa-exclamation-circle",
+          low: "fas fa-check-circle",
+          info: "fas fa-info-circle",
+        };
+        return icons[severity] || "fas fa-info-circle";
+      }
+
+      // تهيئة الصفحة عند التحميل
+      document.addEventListener("DOMContentLoaded", function () {
+        // تفعيل الروابط الجانبية
+        const links = document.querySelectorAll(".nav-link");
+        links.forEach((link) => {
+          link.addEventListener("click", () => {
+            links.forEach((l) => l.classList.remove("active"));
+            link.classList.add("active");
+          });
+        });
+
+        // تحميل التنبيهات عند فتح الصفحة
+        refreshAlerts();
+
+        // تحديث التنبيهات كل 30 ثانية (اختياري)
+        // setInterval(refreshAlerts, 30000);
+      });
+    </script>
+  </body>
+</html>

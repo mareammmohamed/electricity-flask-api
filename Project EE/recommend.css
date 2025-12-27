@@ -1,0 +1,96 @@
+body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+}
+
+.d-flex {
+    display: flex;
+    min-height: 100vh;
+    background-color: #f8f9fa;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 280px;
+    background-color: #343a40;
+    color: #fff;
+    flex-shrink: 0;
+    padding: 20px;
+    position: sticky;
+    top: 0;
+}
+
+.sidebar .nav-link {
+    color: #fff;
+    transition: 0.3s;
+    margin-bottom: 5px;
+}
+
+.sidebar .nav-link:hover,
+.sidebar .nav-link.active {
+    background-color: #495057 !important;
+    color: #ffc107 !important;
+}
+
+/* Content */
+.content-area {
+    flex-grow: 1;
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Cards rows */
+.cards-row {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap; /* يسمح للصفوف الجديدة */
+}
+
+.cards-row > .card {
+    flex: 1 1 calc(33.33% - 20px); /* كل كارد يأخذ ثلث الصف مع الفراغ */
+    box-sizing: border-box;
+}
+
+
+
+/* Left big card + right stacked cards */
+.cards-row.big-left {
+    display: flex;
+    gap: 20px;
+}
+
+.cards-row.big-left .left-card {
+    flex: 2;
+}
+
+.cards-row.big-left .right-column {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Individual card styling */
+.card {
+    padding: 5px;
+    box-sizing: border-box;
+}
+
+/* Text styles */
+.para {
+    color: #565D6D;
+}
+
+.cp {
+    font-size: 30px;
+    font-weight: bolder;
+}
+
+.ct {
+    font-size: 20px;
+    color: #565D6D;
+}
+
